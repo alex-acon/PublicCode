@@ -1,0 +1,68 @@
+<#
+.SYNOPSIS
+Loops through a list of servers, retrieves data from a URI, and converts the result to JSON format.
+
+.DESCRIPTION
+This function takes a list of server names, iterates through each server, sends a request to a specified URI, and converts the response to JSON format. The function uses the Invoke-RestMethod cmdlet to send the HTTP request and convert the response to a PowerShell object.
+
+.PARAMETER ServerList
+An array of server names to loop through.
+
+.PARAMETER Uri
+The URI to retrieve data from.
+
+.OUTPUTS
+[System.Management.Automation.PSCustomObject[]]
+Returns an array of PowerShell objects, each representing the JSON response from a server.
+
+.EXAMPLE
+Get-ServerData -ServerList "server1", "server2", "server3" -Uri "https://example.com/api/data"
+Retrieves data from the specified URI for each server in the list and returns an array of PowerShell objects representing the JSON response.
+#>
+function Get-ServerData {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string[]]$ServerList,
+        [Parameter(Mandatory=$true)]
+        [string]$Uri
+    )
+
+    # Initialize an empty array to store the results
+    $results = @()
+
+    # Loop through each server in the list
+    foreach ($server in $ServerList) {
+        try {
+            # Construct the full URI for the current server
+            $fullUri = "$Uri/$server"
+
+            # Send an HTTP GET request to the URI and convert the response to JSON
+            $response = Invoke-RestMethod -Uri $fullUri -Method Get -ContentType "application/json"
+
+            # Add the JSON response to the results array
+            $results += $response
+        }
+        catch {
+            # If an error occurs, add a placeholder object to the results array
+            $results += [PSCustomObject]@{
+                Server = $server
+                Error = $_.Exception.Message
+            }
+        }
+    }
+
+    # Return the results array
+    return $results
+}
+
+# Usage example for the Get-ServerData function
+
+# Define the list of servers and the URI
+$serverList = "server1", "server2", "server3"
+$uri = "https://example.com/api/data"
+
+# Call the Get-ServerData function to retrieve data from the servers
+$result = Get-ServerData -ServerList $serverList -Uri $uri
+
+# Display the results
+$result
