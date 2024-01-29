@@ -1,0 +1,163 @@
+<#
+.SYNOPSIS
+Retrieves an access token from a service token server.
+
+.DESCRIPTION
+This function sends a request to a service token server to retrieve an access token. 
+The server should be configured to return a valid access token based on the provided credentials.
+
+.PARAMETER TokenServerUrl
+The URL of the service token server.
+
+.PARAMETER ClientId
+The client ID used for authentication.
+
+.PARAMETER ClientSecret
+The client secret used for authentication.
+
+.OUTPUTS
+[string]
+Returns the access token retrieved from the service token server.
+
+.EXAMPLE
+$accessToken = GetAccessToken -TokenServerUrl "https://token-server.com" -ClientId "my-client-id" -ClientSecret "my-client-secret"
+# Retrieves an access token from the service token server using the provided credentials.
+# The access token is stored in the $accessToken variable.
+#>
+
+function GetAccessToken {
+    param (
+        [string]$TokenServerUrl,
+        [string]$ClientId,
+        [string]$ClientSecret
+    )
+
+    # Create a new HTTP client
+    $httpClient = New-Object System.Net.Http.HttpClient
+
+    # Create a dictionary to hold the request parameters
+    $requestParams = @{
+        "grant_type"    = "client_credentials"
+        "client_id"     = $ClientId
+        "client_secret" = $ClientSecret
+    }
+
+    try {
+        # Send a POST request to the token server to retrieve the access token
+        $response = $httpClient.PostAsync($TokenServerUrl, (New-Object System.Net.Http.FormUrlEncodedContent($requestParams))).Result
+
+        # Check if the request was successful
+        if ($response.IsSuccessStatusCode) {
+            # Read the response content
+            $responseContent = $response.Content.ReadAsStringAsync().Result
+
+            # Convert the response content to a JSON object
+            $tokenData = ConvertFrom-Json $responseContent
+
+            # Return the access token
+            return $tokenData.access_token
+        }
+        else {
+            # If the request was not successful, throw an exception with the error message
+            throw "Failed to retrieve access token. Error: $($response.StatusCode) - $($response.ReasonPhrase)"
+        }
+    }
+    catch {
+        # If an exception occurs, throw an exception with the error message
+        throw "Failed to retrieve access token. Error: $_"
+    }
+}
+
+# Usage example for the GetAccessToken function
+
+$tokenServerUrl = "https://token-server.com"
+$clientId = "my-client-id"
+$clientSecret = "my-client-secret"
+
+try {
+    $accessToken = GetAccessToken -TokenServerUrl $tokenServerUrl -ClientId $clientId -ClientSecret $clientSecret
+    Write-Output "Access token: $accessToken"
+}
+catch {
+    Write-Output "Error: $_"
+}
+
+###
+
+<#
+.SYNOPSIS
+Communicates with a protected API using an access token.
+
+.DESCRIPTION
+This function demonstrates how to make a request to a protected API using an access token.
+It uses the Invoke-RestMethod cmdlet to send an HTTP request with the access token in the Authorization header.
+
+.PARAMETER AccessToken
+The access token to be used for authentication.
+
+.PARAMETER ApiUrl
+The URL of the protected API.
+
+.PARAMETER HttpMethod
+The HTTP method to be used for the request (e.g., GET, POST, PUT, DELETE).
+
+.PARAMETER Body
+The body of the request (optional).
+
+.OUTPUTS
+[System.Object]
+Returns the response from the API.
+
+.EXAMPLE
+Invoke-ProtectedApi -AccessToken "YOUR_ACCESS_TOKEN" -ApiUrl "https://api.example.com/resource" -HttpMethod "GET"
+Sends a GET request to the protected API using the specified access token.
+
+.EXAMPLE
+Invoke-ProtectedApi -AccessToken "YOUR_ACCESS_TOKEN" -ApiUrl "https://api.example.com/resource" -HttpMethod "POST" -Body '{"name": "John"}'
+Sends a POST request to the protected API with a JSON body using the specified access token.
+#>
+function Invoke-ProtectedApi {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$AccessToken,
+
+        [Parameter(Mandatory = $true)]
+        [string]$ApiUrl,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateSet("GET", "POST")]
+        [string]$HttpMethod,
+
+        [string]$Body = $null
+    )
+
+    # Create a hashtable to store the headers
+    $headers = @{}
+
+    # Add the access token to the Authorization header
+    $headers["Authorization"] = "Bearer $AccessToken"
+
+    try {
+        # Make the API request using Invoke-RestMethod
+        $response = Invoke-RestMethod -Uri $ApiUrl -Method $HttpMethod -Headers $headers -Body $Body -ContentType "application/json"
+
+        # Return the response
+        return $response
+    }
+    catch {
+        # If an error occurs, display the error message
+        Write-Output "Error: $($_.Exception.Message)"
+    }
+}
+
+# Usage example for the Invoke-ProtectedApi function
+
+# Set the access token and API URL
+$accessToken = "YOUR_ACCESS_TOKEN"
+$apiUrl = "https://api.example.com/resource"
+
+# Make a GET request to the protected API
+$response = Invoke-ProtectedApi -AccessToken $accessToken -ApiUrl $apiUrl -HttpMethod "GET"
+
+# Display the response
+Write-Output $response
