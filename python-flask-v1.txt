@@ -1,0 +1,184 @@
+from flask import Flask, redirect, request, render_template_string, session, url_for
+import requests
+import json
+from requests_kerberos import HTTPKerberosAuth
+
+app = Flask(__name__)
+app.secret_key = 'your_secret_key'
+
+# Client ID and Secret
+client_id = 'your_client_id'
+client_secret = 'your_client_secret'
+
+# Authorization endpoint
+authorization_endpoint = 'https://your_authorization_server.com/authorize'
+token_endpoint = 'https://your_authorization_server.com/token'
+
+# Redirect URI
+redirect_uri = url_for('oauth_callback', _external=True)
+
+# Scopes
+scopes = 'scope1 scope2'
+
+# Kerberos settings
+kerberos_realm = 'your_kerberos_realm'
+kerberos_principal = 'your_kerberos_principal'
+
+@app.route('/')
+def index():
+    if 'access_token' in session:
+        # Render a template with three text labels for the user to enter the API query parameters
+        return render_template_string('''
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.min.css">
+                <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+                <script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
+            </head>
+            <body>
+                <form action="/" method="post">
+                    <label for="param1">Parameter 1:</label><br>
+                    <input type="text" id="param1" name="param1"><br>
+                    <label for="param2">Parameter 2:</label><br>
+                    <input type="text" id="param2" name="param2"><br>
+                    <label for="param3">Parameter 3:</label><br>
+                    <input type="text" id="param3" name="param3"><br>
+                    <input type="submit" value="Submit">
+                </form>
+                <table id="results_table" class="display" style="width:100%"></table>
+                <button id="download_btn">Download</button>
+                <script>
+                    $(document).ready(function() {
+                        var results_table = $('#results_table').DataTable({
+                            "columns": [
+                                {"title": "Column1"},
+                                {"title": "Column2"},
+                                {"title": "Column3"}
+                            ]
+                        });
+                        $('#download_btn').on('click', function() {
+                            var data = results_table.rows().data().toArray();
+                            var csv = 'Column1,Column2,Column3\n';
+                            for (var i = 0; i < data.length; i++) {
+                                csv += data[i].join(',') + '\n';
+                            }
+                            var blob = new Blob([csv], {type: 'text/csv'});
+                            var url = window.URL.createObjectURL(blob);
+                            var a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'results.csv';
+                            a.click();
+                        });
+                    });
+                </script>
+            </body>
+            </html>
+        ''')
+    else:
+        # Redirect the user to the authorization endpoint
+        return redirect(url_for('oauth_authorize'))
+
+@app.route('/', methods=['POST'])
+def submit_query():
+    if 'access_token' in session:
+        # Use the access token to make a request to the protected API with the user-provided query parameters and Kerberos authentication
+        param1 = request.form['param1']
+        param2 = request.form['param2']
+        param3 = request.form['param3']
+        response = requests.get(f'https://your_protected_api.com?param1={param1}&param2={param2}&param3={param3}', headers={'Authorization': 'Bearer ' + session['access_token']}, auth=HTTPKerberosAuth(kerberos_principal, realm=kerberos_realm))
+        # Process the API response and render a template with the results in a dynamic, searchable DataTable
+        data = json.loads(response.text)
+        return render_template_string('''
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.min.css">
+                <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+                <script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
+            </head>
+            <body>
+                <form action="/" method="post">
+                    <label for="param1">Parameter 1:</label><br>
+                    <input type="text" id="param1" name="param1" value="{{param1}}"><br>
+                    <label for="param2">Parameter 2:</label><br>
+                    <input type="text" id="param2" name="param2" value="{{param2}}"><br>
+                    <label for="param3">Parameter 3:</label><br>
+                    <input type="text" id="param3" name="param3" value="{{param3}}"><br>
+                    <input type="submit" value="Submit">
+                </form>
+                <table id="results_table" class="display" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Column1</th>
+                            <th>Column2</th>
+                            <th>Column3</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data %}
+                            <tr>
+                                <td>{{row['Column1']}}</td>
+                                <td>{{row['Column2']}}</td>
+                                <td>{{row['Column3']}}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <button id="download_btn">Download</button>
+                <script>
+                    $(document).ready(function() {
+                        var results_table = $('#results_table').DataTable({
+                            "searching": true
+                        });
+                        $('#download_btn').on('click', function() {
+                            var data = results_table.rows().data().toArray();
+                            var csv = 'Column1,Column2,Column3\n';
+                            for (var i = 0; i < data.length; i++) {
+                                csv += data[i].join(',') + '\n';
+                            }
+                            var blob = new Blob([csv], {type: 'text/csv'});
+                            var url = window.URL.createObjectURL(blob);
+                            var a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'results.csv';
+                            a.click();
+                        });
+                    });
+                </script>
+            </body>
+            </html>
+        ''', param1=param1, param2=param2, param3=param3, data=data)
+    else:
+        # Redirect the user to the authorization endpoint
+        return redirect(url_for('oauth_authorize'))
+
+@app.route('/oauth_authorize')
+def oauth_authorize():
+    # Create the authorization URL
+    url = f'{authorization_endpoint}?response_type=code&client_id={client_id}&redirect_uri={redirect_uri}&scope={scopes}'
+    return redirect(url)
+
+@app.route('/oauth_callback')
+def oauth_callback():
+    # Exchange the authorization code for a token
+    authorization_code = request.args.get('code')
+    data = {
+        'grant_type': 'authorization_code',
+        'code': authorization_code,
+        'redirect_uri': redirect_uri,
+        'client_id': client_id,
+        'client_secret': client_secret
+    }
+
+    response = requests.post(token_endpoint, data=data, auth=HTTPKerberosAuth(kerberos_principal, realm=kerberos_realm))
+
+    if response.status_code == 200:
+        token_response = json.loads(response.text)
+        session['access_token'] = token_response['access_token']
+        return redirect(url_for('index'))
+    else:
+        return 'Failed to exchange authorization code for a token'
+
+if __name__ == '__main__':
+    app.run(debug=True)
