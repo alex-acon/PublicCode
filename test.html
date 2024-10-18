@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Controls with Radio Buttons</title>
+    <style>
+        .hidden {
+            display: none;
+        }
+    </style>
+    <script>
+        function toggleControls() {
+            // Get the value of the selected radio button
+            const selectedValue = document.querySelector('input[name="options"]:checked').value;
+            
+            // Get all control sections
+            const optionOneControls = document.getElementById('optionOneControls');
+            const optionTwoControls = document.getElementById('optionTwoControls');
+
+            // Clear previous state
+            optionOneControls.classList.add('hidden');
+            optionTwoControls.classList.add('hidden');
+
+            // Show controls based on the selected radio button
+            if (selectedValue === 'option1') {
+                optionOneControls.classList.remove('hidden');
+            } else if (selectedValue === 'option2') {
+                optionTwoControls.classList.remove('hidden');
+            }
+        }
+    </script>
+</head>
+<body>
+
+<h1>Choose an Option</h1>
+
+<!-- Radio buttons for selection -->
+<label>
+    <input type="radio" name="options" value="option1" onclick="toggleControls()"> Option 1
+</label>
+<label>
+    <input type="radio" name="options" value="option2" onclick="toggleControls()"> Option 2
+</label>
+
+<!-- Controls for Option 1 -->
+<div id="optionOneControls" class="hidden">
+    <h2>Option 1 Controls</h2>
+    <label for="input1">Input for Option 1:</label>
+    <input type="text" id="input1" name="input1">
+</div>
+
+<!-- Controls for Option 2 -->
+<div id="optionTwoControls" class="hidden">
+    <h2>Option 2 Controls</h2>
+    <label for="input2">Input for Option 2:</label>
+    <input type="text" id="input2" name="input2">
+    <label for="select1">Select for Option 2:</label>
+    <select id="select1">
+        <option value="choice1">Choice 1</option>
+        <option value="choice2">Choice 2</option>
+    </select>
+</div>
+
+</body>
+</html>
