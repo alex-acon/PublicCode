@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tabs with Content</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="tab-container">
+        <button class="tab" id="tab1" onclick="selectTab(this, 'content1')">Tab 1</button>
+        <button class="tab" id="tab2" onclick="selectTab(this, 'content2')">Tab 2</button>
+    </div>
+
+    <div class="content-container">
+        <div class="content" id="content1">Content for Tab 1</div>
+        <div class="content" id="content2">Content for Tab 2</div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

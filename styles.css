@@ -1,0 +1,69 @@
+.tab-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.tab {
+    padding: 10px 20px;
+    border: 1px solid #ccc;
+    background-color: #f9f9f9;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.tab.active {
+    background-color: #007bff;
+    color: white;
+}
+
+.content-container {
+    border: 1px solid #ccc;
+    padding: 20px;
+}
+
+.content {
+    display: none;
+}
+
+.content.active {
+    display: block;
+}
+JavaScript (script.js)
+
+function selectTab(tab, contentId) {
+    // Remove active class from all tabs
+    const tabs = document.querySelectorAll('.tab');
+    tabs.forEach(t => t.classList.remove('active'));
+
+    // Add active class to the selected tab
+    tab.classList.add('active');
+
+    // Hide all content
+    const contents = document.querySelectorAll('.content');
+    contents.forEach(c => c.classList.remove('active'));
+
+    // Show the selected content
+    document.getElementById(contentId).classList.add('active');
+}
+
+// Optionally, select the first tab by default
+window.onload = function() {
+    selectTab(document.getElementById('tab1'), 'content1');
+};
+Explanation
+HTML:
+
+The HTML structure includes a container for the tabs and another container for the tab contents.
+Each tab button has an onclick event that calls the selectTab function, passing the tab element and the corresponding content ID.
+CSS:
+
+The CSS styles the tabs and defines a special style for the active tab using the .active class.
+The .content class is used to hide the content by default, and the .content.active class is used to display the active content.
+JavaScript:
+
+The selectTab function removes the active class from all tabs and contents, then adds it to the selected tab and corresponding content.
+The window.onload function optionally selects the first tab by default when the page loads.
+When you click on a tab, the selectTab function will be called, updating the active tab's style and displaying the corresponding content.
+
+
