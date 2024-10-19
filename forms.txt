@@ -1,0 +1,106 @@
+using System;
+using System.Net.Http;
+using System.Text;
+using System.Windows.Forms;
+using Newtonsoft.Json.Linq;
+using Microsoft.Web.WebView2.WinForms;
+
+namespace OAuthTokenExchange
+{
+    public partial class Form1 : Form
+    {
+        private string clientId;
+        private string clientSecret = "your_client_secret"; // Replace with your actual client secret
+        private string resource; 
+        private string redirectUri;
+        private string tokenUrl = "https://your-oauth-provider.com/token"; // Replace with your token endpoint
+
+        public Form1()
+        {
+            InitializeComponent();
+            InitializeWebView();
+        }
+
+        private async void InitializeWebView()
+        {
+            await webView2.EnsureCoreWebView2Async(null);
+            webView2.CoreWebView2.NavigationCompleted += CoreWebView2_NavigationCompleted;
+        }
+
+        private void btnExecute_Click(object sender, EventArgs e)
+        {
+            clientId = txtClientId.Text;
+            resource = txtResource.Text;
+            redirectUri = txtRedirectUri.Text;
+
+            if (string.IsNullOrWhiteSpace(clientId) || string.IsNullOrWhiteSpace(resource) || string.IsNullOrWhiteSpace(redirectUri))
+            {
+                MessageBox.Show("Please fill in all fields.");
+                return;
+            }
+
+            // Start the OAuth flow by navigating to the authorization endpoint
+            string authorizationUrl = $"https://your-oauth-provider.com/auth?client_id={clientId}&resource={resource}&redirect_uri={Uri.EscapeDataString(redirectUri)}&response_type=code";
+            webView2.Source = new Uri(authorizationUrl);
+        }
+
+        private void btnExchangeToken_Click(object sender, EventArgs e)
+        {
+            string authorizationCode = txtAuthorizationCode.Text;
+
+            if (!string.IsNullOrWhiteSpace(authorizationCode))
+            {
+                ExchangeAuthorizationCodeForToken(authorizationCode);
+            }
+            else
+            {
+                MessageBox.Show("Please enter an authorization code.");
+            }
+        }
+
+        private async void ExchangeAuthorizationCodeForToken(string authorizationCode)
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                var tokenRequestBody = new StringContent($"grant_type=authorization_code&code={authorizationCode}&client_id={clientId}&client_secret={clientSecret}&redirect_uri={redirectUri}&resource={resource}", Encoding.UTF8, "application/x-www-form-urlencoded");
+
+                HttpResponseMessage response = await client.PostAsync(tokenUrl, tokenRequestBody);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    string jsonResponse = await response.Content.ReadAsStringAsync();
+                    JObject tokenResponse = JObject.Parse(jsonResponse);
+                    string accessToken = tokenResponse["access_token"]?.ToString();
+
+                    lblToken.Text = $"Access Token: {accessToken}";
+                }
+                else
+                {
+                    MessageBox.Show("Error exchanging code for token: " + response.ReasonPhrase);
+                }
+            }
+        }
+
+        private void CoreWebView2_NavigationCompleted(object sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs e)
+        {
+            // Check if the navigation URL contains the authorization code
+            if (e.IsSuccess && sender is CoreWebView2 webView)
+            {
+                string url = webView.Source.ToString();
+                if (url.StartsWith(redirectUri))
+                {
+                    // Extract the authorization code from the query parameters
+                    var query = url.Split('?')[1];
+                    var param = System.Web.HttpUtility.ParseQueryString(query);
+                    string authorizationCode = param["code"];
+
+                    if (!string.IsNullOrEmpty(authorizationCode))
+                    {
+                        txtAuthorizationCode.Text = authorizationCode;
+                        ExchangeAuthorizationCodeForToken(authorizationCode);
+                    }
+                }
+            }
+        }
+    }
+}

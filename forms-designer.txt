@@ -1,0 +1,119 @@
+private System.Windows.Forms.TextBox txtClientId;
+private System.Windows.Forms.TextBox txtResource;
+private System.Windows.Forms.TextBox txtRedirectUri;
+private System.Windows.Forms.Button btnExecute;
+private System.Windows.Forms.TextBox txtAuthorizationCode;
+private System.Windows.Forms.Button btnExchangeToken;
+private System.Windows.Forms.Label lblToken;
+private Microsoft.Web.WebView2.WinForms.WebView2 webView2;
+
+private void InitializeComponent()
+{
+    this.txtClientId = new System.Windows.Forms.TextBox();
+    this.txtResource = new System.Windows.Forms.TextBox();
+    this.txtRedirectUri = new System.Windows.Forms.TextBox();
+    this.btnExecute = new System.Windows.Forms.Button();
+    this.txtAuthorizationCode = new System.Windows.Forms.TextBox();
+    this.btnExchangeToken = new System.Windows.Forms.Button();
+    this.lblToken = new System.Windows.Forms.Label();
+    this.webView2 = new Microsoft.Web.WebView2.WinForms.WebView2();
+    
+    this.SuspendLayout();
+
+    // 
+    // txtClientId
+    // 
+    this.txtClientId.Location = new System.Drawing.Point(15, 15);
+    this.txtClientId.Name = "txtClientId";
+    this.txtClientId.Size = new System.Drawing.Size(400, 20);
+    this.txtClientId.TabIndex = 0;
+    this.txtClientId.PlaceholderText = "Client ID";
+
+    // 
+    // txtResource
+    // 
+    this.txtResource.Location = new System.Drawing.Point(15, 45);
+    this.txtResource.Name = "txtResource";
+    this.txtResource.Size = new System.Drawing.Size(400, 20);
+    this.txtResource.TabIndex = 1;
+    this.txtResource.PlaceholderText = "Resource";
+
+    // 
+    // txtRedirectUri
+    // 
+    this.txtRedirectUri.Location = new System.Drawing.Point(15, 75);
+    this.txtRedirectUri.Name = "txtRedirectUri";
+    this.txtRedirectUri.Size = new System.Drawing.Size(400, 20);
+    this.txtRedirectUri.TabIndex = 2;
+    this.txtRedirectUri.PlaceholderText = "Redirect URI";
+
+    // 
+    // btnExecute
+    // 
+    this.btnExecute.Location = new System.Drawing.Point(15, 105);
+    this.btnExecute.Name = "btnExecute";
+    this.btnExecute.Size = new System.Drawing.Size(400, 23);
+    this.btnExecute.TabIndex = 3;
+    this.btnExecute.Text = "Start OAuth Flow";
+    this.btnExecute.UseVisualStyleBackColor = true;
+    this.btnExecute.Click += new System.EventHandler(this.btnExecute_Click);
+
+    // 
+    // txtAuthorizationCode
+    // 
+    this.txtAuthorizationCode.Location = new System.Drawing.Point(15, 140);
+    this.txtAuthorizationCode.Name = "txtAuthorizationCode";
+    this.txtAuthorizationCode.Size = new System.Drawing.Size(400, 20);
+    this.txtAuthorizationCode.TabIndex = 4;
+    this.txtAuthorizationCode.PlaceholderText = "Authorization Code";
+
+    // 
+    // btnExchangeToken
+    // 
+    this.btnExchangeToken.Location = new System.Drawing.Point(15, 170);
+    this.btnExchangeToken.Name = "btnExchangeToken";
+    this.btnExchangeToken.Size = new System.Drawing.Size(400, 23);
+    this.btnExchangeToken.TabIndex = 5;
+    this.btnExchangeToken.Text = "Exchange Token";
+    this.btnExchangeToken.UseVisualStyleBackColor = true;
+    this.btnExchangeToken.Click += new System.EventHandler(this.btnExchangeToken_Click);
+
+    // 
+    // lblToken
+    // 
+    this.lblToken.AutoSize = true;
+    this.lblToken.Location = new System.Drawing.Point(15, 210);
+    this.lblToken.Name = "lblToken";
+    this.lblToken.Size = new System.Drawing.Size(0, 13);
+    this.lblToken.TabIndex = 6;
+
+    // 
+    // webView2
+    // 
+    this.webView2.Dock = System.Windows.Forms.DockStyle.Fill;
+    this.webView2.Location = new System.Drawing.Point(0, 0);
+    this.webView2.MinimumSize = new System.Drawing.Size(20, 20);
+    this.webView2.Name = "webView2";
+    this.webView2.Size = new System.Drawing.Size(800, 450);
+    this.webView2.TabIndex = 7;
+    this.webView2.Visible = false; // Set to false, as we primarily use it for OAuth flow
+
+    // 
+    // Form1
+    // 
+    this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+    this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+    this.ClientSize = new System.Drawing.Size(800, 450);
+    this.Controls.Add(this.webView2);
+    this.Controls.Add(this.lblToken);
+    this.Controls.Add(this.btnExchangeToken);
+    this.Controls.Add(this.txtAuthorizationCode);
+    this.Controls.Add(this.btnExecute);
+    this.Controls.Add(this.txtRedirectUri);
+    this.Controls.Add(this.txtResource);
+    this.Controls.Add(this.txtClientId);
+    this.Name = "Form1";
+    this.Text = "OAuth Token Exchange";
+    this.ResumeLayout(false);
+    this.PerformLayout();
+}
