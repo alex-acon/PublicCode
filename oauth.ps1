@@ -48,6 +48,31 @@ function Get-OAuthToken {
     return $response.access_token
 }
 
+# Function to validate Active Directory credentials and check an attribute
+function Validate-ADCredentials {
+    param (
+        [string]$Username,
+        [string]$Password,
+        [string]$Attribute
+    )
+
+    try {
+        $domain = "yourdomain.com"  # Replace with your domain
+        $securePassword = ConvertTo-SecureString $Password -AsPlainText -Force
+        $credentials = New-Object System.Management.Automation.PSCredential($Username, $securePassword)
+
+        $user = Get-ADUser -Identity $Username -Credential $credentials -Properties $Attribute -ErrorAction Stop
+
+        if ($user.$Attribute -eq $true) {  # Replace with your attribute check logic
+            return $true
+        } else {
+            return $false
+        }
+    } catch {
+        return $false
+    }
+}
+
 # Create the form
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "OAuth 2.0 Token Generator"
@@ -140,6 +165,22 @@ $buttonGetToken.Add_Click({
     } elseif ($radioButtonDevelopment.Checked) {
         $authEndpoint = "https://login.development.com/oauth2/authorize"
         $tokenEndpoint = "https://login.development.com/oauth2/token"
+
+        # Prompt for credentials
+        $credential = $host.ui.PromptForCredential("Active Directory Credentials", "Please enter your credentials:", "", "")
+        if (-not $credential) {
+            [System.Windows.Forms.MessageBox]::Show("Credentials are required for the Development environment.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+            return
+        }
+
+        $username = $credential.UserName
+        $password = $credential.GetNetworkCredential().Password
+
+        # Validate Active Directory credentials and check an attribute
+        if (-not (Validate-ADCredentials -Username $username -Password $password -Attribute "yourAttribute")) {  # Replace with your attribute
+            [System.Windows.Forms.MessageBox]::Show("Invalid credentials or attribute check failed.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+            return
+        }
     } else {
         [System.Windows.Forms.MessageBox]::Show("Please select an environment.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
         return
