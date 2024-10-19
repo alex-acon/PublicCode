@@ -17,8 +17,22 @@ function Get-OAuthToken {
     # Open the authorization URL in the default browser
     Start-Process $authUrl
 
-    # Prompt the user to enter the authorization code
-    $authCode = Read-Host "Enter the authorization code"
+    # Start a local HTTP listener to capture the authorization code
+    $listener = New-Object System.Net.HttpListener
+    $listener.Prefixes.Add("http://localhost:5000/")
+    $listener.Start()
+
+    $context = $listener.GetContext()
+    $response = $context.Response
+    $response.StatusCode = 200
+    $response.StatusDescription = "OK"
+    $response.ContentType = "text/html"
+    $response.ContentEncoding = [System.Text.Encoding]::UTF8
+    $response.OutputStream.Write([System.Text.Encoding]::UTF8.GetBytes("Authorization code received. You can close this tab."), 0, 45)
+    $response.OutputStream.Close()
+
+    $authCode = $context.Request.QueryString.Get("code")
+    $listener.Stop()
 
     # Exchange the authorization code for a token
     $body = @{
@@ -37,7 +51,7 @@ function Get-OAuthToken {
 # Create the form
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "OAuth 2.0 Token Generator"
-$form.Size = New-Object System.Drawing.Size(400,300)
+$form.Size = New-Object System.Drawing.Size(500,350)
 $form.StartPosition = "CenterScreen"
 
 # Create labels and textboxes for input fields
@@ -48,66 +62,66 @@ $form.Controls.Add($labelClientId)
 
 $textBoxClientId = New-Object System.Windows.Forms.TextBox
 $textBoxClientId.Location = New-Object System.Drawing.Point(100,20)
-$textBoxClientId.Size = New-Object System.Drawing.Size(250,20)
+$textBoxClientId.Size = New-Object System.Drawing.Size(350,25)
 $form.Controls.Add($textBoxClientId)
 
 $labelResourceId = New-Object System.Windows.Forms.Label
 $labelResourceId.Text = "Resource ID:"
-$labelResourceId.Location = New-Object System.Drawing.Point(10,50)
+$labelResourceId.Location = New-Object System.Drawing.Point(10,60)
 $form.Controls.Add($labelResourceId)
 
 $textBoxResourceId = New-Object System.Windows.Forms.TextBox
-$textBoxResourceId.Location = New-Object System.Drawing.Point(100,50)
-$textBoxResourceId.Size = New-Object System.Drawing.Size(250,20)
+$textBoxResourceId.Location = New-Object System.Drawing.Point(100,60)
+$textBoxResourceId.Size = New-Object System.Drawing.Size(350,25)
 $form.Controls.Add($textBoxResourceId)
 
 $labelRedirectUri = New-Object System.Windows.Forms.Label
 $labelRedirectUri.Text = "Redirect URI:"
-$labelRedirectUri.Location = New-Object System.Drawing.Point(10,80)
+$labelRedirectUri.Location = New-Object System.Drawing.Point(10,100)
 $form.Controls.Add($labelRedirectUri)
 
 $textBoxRedirectUri = New-Object System.Windows.Forms.TextBox
-$textBoxRedirectUri.Location = New-Object System.Drawing.Point(100,80)
-$textBoxRedirectUri.Size = New-Object System.Drawing.Size(250,20)
+$textBoxRedirectUri.Location = New-Object System.Drawing.Point(100,100)
+$textBoxRedirectUri.Size = New-Object System.Drawing.Size(350,25)
 $form.Controls.Add($textBoxRedirectUri)
 
 # Create radio buttons for environment selection
 $labelEnvironment = New-Object System.Windows.Forms.Label
 $labelEnvironment.Text = "Environment:"
-$labelEnvironment.Location = New-Object System.Drawing.Point(10,110)
+$labelEnvironment.Location = New-Object System.Drawing.Point(10,140)
 $form.Controls.Add($labelEnvironment)
 
 $radioButtonProduction = New-Object System.Windows.Forms.RadioButton
 $radioButtonProduction.Text = "Production"
-$radioButtonProduction.Location = New-Object System.Drawing.Point(100,110)
+$radioButtonProduction.Location = New-Object System.Drawing.Point(100,140)
 $form.Controls.Add($radioButtonProduction)
 
 $radioButtonUAT = New-Object System.Windows.Forms.RadioButton
 $radioButtonUAT.Text = "UAT"
-$radioButtonUAT.Location = New-Object System.Drawing.Point(100,135)
+$radioButtonUAT.Location = New-Object System.Drawing.Point(100,170)
 $form.Controls.Add($radioButtonUAT)
 
 $radioButtonDevelopment = New-Object System.Windows.Forms.RadioButton
 $radioButtonDevelopment.Text = "Development"
-$radioButtonDevelopment.Location = New-Object System.Drawing.Point(100,160)
+$radioButtonDevelopment.Location = New-Object System.Drawing.Point(100,200)
 $form.Controls.Add($radioButtonDevelopment)
 
 # Create a button to get the token
 $buttonGetToken = New-Object System.Windows.Forms.Button
 $buttonGetToken.Text = "Get Token"
-$buttonGetToken.Location = New-Object System.Drawing.Point(150,190)
+$buttonGetToken.Location = New-Object System.Drawing.Point(200,240)
 $buttonGetToken.Size = New-Object System.Drawing.Size(100,30)
 $form.Controls.Add($buttonGetToken)
 
 # Create a label to display the token
 $labelToken = New-Object System.Windows.Forms.Label
 $labelToken.Text = "Token:"
-$labelToken.Location = New-Object System.Drawing.Point(10,230)
+$labelToken.Location = New-Object System.Drawing.Point(10,280)
 $form.Controls.Add($labelToken)
 
 $textBoxToken = New-Object System.Windows.Forms.TextBox
-$textBoxToken.Location = New-Object System.Drawing.Point(100,230)
-$textBoxToken.Size = New-Object System.Drawing.Size(250,20)
+$textBoxToken.Location = New-Object System.Drawing.Point(100,280)
+$textBoxToken.Size = New-Object System.Drawing.Size(350,25)
 $textBoxToken.ReadOnly = $true
 $form.Controls.Add($textBoxToken)
 
