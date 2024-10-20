@@ -8,39 +8,33 @@ function Get-OAuthToken {
         [string]$ResourceId,
         [string]$RedirectUri,
         [string]$AuthEndpoint,
-        [string]$TokenEndpoint
+        [string]$TokenEndpoint,
+        [string]$AuthCode,
+        [bool]$RequireCredentials = $false
     )
-
-    # Construct the authorization URL
-    $authUrl = "$AuthEndpoint?response_type=code&client_id=$ClientId&resource=$ResourceId&redirect_uri=$RedirectUri"
-
-    # Open the authorization URL in the default browser
-    Start-Process $authUrl
-
-    # Start a local HTTP listener to capture the authorization code
-    $listener = New-Object System.Net.HttpListener
-    $listener.Prefixes.Add("http://localhost:5000/")
-    $listener.Start()
-
-    $context = $listener.GetContext()
-    $response = $context.Response
-    $response.StatusCode = 200
-    $response.StatusDescription = "OK"
-    $response.ContentType = "text/html"
-    $response.ContentEncoding = [System.Text.Encoding]::UTF8
-    $response.OutputStream.Write([System.Text.Encoding]::UTF8.GetBytes("Authorization code received. You can close this tab."), 0, 45)
-    $response.OutputStream.Close()
-
-    $authCode = $context.Request.QueryString.Get("code")
-    $listener.Stop()
 
     # Exchange the authorization code for a token
     $body = @{
         grant_type    = "authorization_code"
-        code          = $authCode
+        code          = $AuthCode
         redirect_uri  = $RedirectUri
         client_id     = $ClientId
         resource      = $ResourceId
+    }
+
+    if ($RequireCredentials) {
+        # Prompt for credentials
+        $credential = $host.ui.PromptForCredential("Token Endpoint Credentials", "Please enter your credentials for the token endpoint:", "", "")
+        if (-not $credential) {
+            throw "Credentials are required for the token endpoint."
+        }
+
+        $username = $credential.UserName
+        $password = $credential.GetNetworkCredential().Password
+
+        # Add credentials to the body
+        $body.Add("username", $username)
+        $body.Add("password", $password)
     }
 
     $response = Invoke-RestMethod -Uri $TokenEndpoint -Method Post -Body $body
@@ -76,7 +70,7 @@ function Validate-ADCredentials {
 # Create the form
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "OAuth 2.0 Token Generator"
-$form.Size = New-Object System.Drawing.Size(500,350)
+$form.Size = New-Object System.Drawing.Size(500,450)
 $form.StartPosition = "CenterScreen"
 
 # Create labels and textboxes for input fields
@@ -138,33 +132,57 @@ $buttonGetToken.Location = New-Object System.Drawing.Point(200,240)
 $buttonGetToken.Size = New-Object System.Drawing.Size(100,30)
 $form.Controls.Add($buttonGetToken)
 
+# Create a label and textbox for the authorization code
+$labelAuthCode = New-Object System.Windows.Forms.Label
+$labelAuthCode.Text = "Authorization Code:"
+$labelAuthCode.Location = New-Object System.Drawing.Point(10,280)
+$form.Controls.Add($labelAuthCode)
+
+$textBoxAuthCode = New-Object System.Windows.Forms.TextBox
+$textBoxAuthCode.Location = New-Object System.Drawing.Point(150,280)
+$textBoxAuthCode.Size = New-Object System.Drawing.Size(300,25)
+$form.Controls.Add($textBoxAuthCode)
+
 # Create a label to display the token
 $labelToken = New-Object System.Windows.Forms.Label
 $labelToken.Text = "Token:"
-$labelToken.Location = New-Object System.Drawing.Point(10,280)
+$labelToken.Location = New-Object System.Drawing.Point(10,320)
 $form.Controls.Add($labelToken)
 
 $textBoxToken = New-Object System.Windows.Forms.TextBox
-$textBoxToken.Location = New-Object System.Drawing.Point(100,280)
-$textBoxToken.Size = New-Object System.Drawing.Size(350,25)
+$textBoxToken.Location = New-Object System.Drawing.Point(100,320)
+$textBoxToken.Size = New-Object System.Drawing.Size(350,125)  # Change the height to 125 (5 times the original height of 25)
 $textBoxToken.ReadOnly = $true
+$textBoxToken.Multiline = $true  # Enable multiline for the textbox
+$textBoxToken.ScrollBars = [System.Windows.Forms.ScrollBars]::Vertical  # Add vertical scrollbars
 $form.Controls.Add($textBoxToken)
 
-# Event handler for the button click
+# Create a button to copy the token to the clipboard
+$buttonCopyToken = New-Object System.Windows.Forms.Button
+$buttonCopyToken.Text = "Copy Token"
+$buttonCopyToken.Location = New-Object System.Drawing.Point(200,450)
+$buttonCopyToken.Size = New-Object System.Drawing.Size(100,30)
+$form.Controls.Add($buttonCopyToken)
+
+# Event handler for the "Get Token" button click
 $buttonGetToken.Add_Click({
     $clientId = $textBoxClientId.Text
     $resourceId = $textBoxResourceId.Text
     $redirectUri = $textBoxRedirectUri.Text
+    $authCode = $textBoxAuthCode.Text
 
     if ($radioButtonProduction.Checked) {
         $authEndpoint = "https://login.production.com/oauth2/authorize"
         $tokenEndpoint = "https://login.production.com/oauth2/token"
+        $requireCredentials = $false
     } elseif ($radioButtonUAT.Checked) {
         $authEndpoint = "https://login.uat.com/oauth2/authorize"
         $tokenEndpoint = "https://login.uat.com/oauth2/token"
+        $requireCredentials = $false
     } elseif ($radioButtonDevelopment.Checked) {
         $authEndpoint = "https://login.development.com/oauth2/authorize"
         $tokenEndpoint = "https://login.development.com/oauth2/token"
+        $requireCredentials = $true
 
         # Prompt for credentials
         $credential = $host.ui.PromptForCredential("Active Directory Credentials", "Please enter your credentials:", "", "")
@@ -186,8 +204,27 @@ $buttonGetToken.Add_Click({
         return
     }
 
-    $token = Get-OAuthToken -ClientId $clientId -ResourceId $resourceId -RedirectUri $redirectUri -AuthEndpoint $authEndpoint -TokenEndpoint $tokenEndpoint
+    # Construct the authorization URL
+    $authUrl = "$authEndpoint?response_type=code&client_id=$clientId&resource=$resourceId&redirect_uri=$redirectUri"
+
+    # Open the authorization URL in the default browser
+    Start-Process $authUrl
+
+    # Prompt the user to enter the authorization code
+    [System.Windows.Forms.MessageBox]::Show("Please copy the authorization code from the browser and paste it into the Authorization Code field.", "Authorization Code", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+
+    $token = Get-OAuthToken -ClientId $clientId -ResourceId $resourceId -RedirectUri $redirectUri -AuthEndpoint $authEndpoint -TokenEndpoint $tokenEndpoint -AuthCode $authCode -RequireCredentials $requireCredentials
     $textBoxToken.Text = $token
+})
+
+# Event handler for the "Copy Token" button click
+$buttonCopyToken.Add_Click({
+    if ($textBoxToken.Text) {
+        [System.Windows.Forms.Clipboard]::SetText($textBoxToken.Text)
+        [System.Windows.Forms.MessageBox]::Show("Token copied to clipboard.", "Success", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+    } else {
+        [System.Windows.Forms.MessageBox]::Show("No token to copy.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+    }
 })
 
 # Show the form
