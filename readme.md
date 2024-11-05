@@ -1,6 +1,6 @@
 # Access Token Generator UI
 
-This guide will walk you through the process of using the Access Token Generator UI to generate an access token.
+This guide will walk you through the process of using the Access Token Generator UI to generate an access token. The goal here is to reduce the risk of entering credentials and ultimately remove basic auth.
 
 ## Table of Contents
 
