@@ -29,3 +29,12 @@ index=your_index sourcetype=your_sourcetype
 | stats count by wait_time_range
 | sort wait_time_range
 
+index=your_index sourcetype=your_sourcetype
+| spath message
+| search message!="*SSL handshake failure*"
+| rex field=message "\s(?<timings>(-?\d+/){7}(?<wait_time>-?\d+))\s+(?<status>\d{3})"
+| eval wait_time=tonumber(wait_time)
+| where wait_time>=0 AND wait_time<=10000
+| eval wait_time_range=floor(wait_time/500)*500 . "-" . (floor(wait_time/500)*500+500)
+| stats count by wait_time_range
+| sort +wait_time_range
