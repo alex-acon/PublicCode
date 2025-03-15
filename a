@@ -1,18 +1,31 @@
-index=your_index source=your_source
-| spath
-| rex field=message "\s(?<timings>(?:\d+/){7}(?<wait_time>\d+))\s+(?<status>\d+)\b"
-| eval wait_time = tonumber(wait_time)
-| eval wait_time_range = case(
-    wait_time >= 0 AND wait_time < 100, "0-99",
-    wait_time >= 100 AND wait_time < 200, "100-199",
-    wait_time >= 200 AND wait_time < 300, "200-299",
-    wait_time >= 300 AND wait_time < 400, "300-399",
-    wait_time >= 400 AND wait_time < 500, "400-499",
-    wait_time >= 500 AND wait_time < 600, "500-599",
-    wait_time >= 600 AND wait_time < 700, "600-699",
-    wait_time >= 700 AND wait_time < 800, "700-799",
-    wait_time >= 800 AND wait_time < 900, "800-899",
-    wait_time >= 900 AND wait_time <= 1000, "900-1000",
-    1=1, "Unknown")
+index=your_index sourcetype=your_sourcetype
+| spath input=_raw path=message output=msg
+| regex msg="\s(\S+/){7}(?<wait_time>-?\d+)\s+(?<status>\d{3})"
+| where isnum(wait_time)
+| eval wait_time=tonumber(wait_time)
+| where wait_time >= 0 AND wait_time <= 10000
+| eval wait_time_range=case(
+    wait_time >= 0 AND wait_time < 500, "0-500",
+    wait_time >= 500 AND wait_time < 1000, "500-1000",
+    wait_time >= 1000 AND wait_time < 1500, "1000-1500",
+    wait_time >= 1500 AND wait_time < 2000, "1500-2000",
+    wait_time >= 2000 AND wait_time < 2500, "2000-2500",
+    wait_time >= 2500 AND wait_time < 3000, "2500-3000",
+    wait_time >= 3000 AND wait_time < 3500, "3000-3500",
+    wait_time >= 3500 AND wait_time < 4000, "3500-4000",
+    wait_time >= 4000 AND wait_time < 4500, "4000-4500",
+    wait_time >= 4500 AND wait_time < 5000, "4500-5000",
+    wait_time >= 5000 AND wait_time < 5500, "5000-5500",
+    wait_time >= 5500 AND wait_time < 6000, "5500-6000",
+    wait_time >= 6000 AND wait_time < 6500, "6000-6500",
+    wait_time >= 6500 AND wait_time < 7000, "6500-7000",
+    wait_time >= 7000 AND wait_time < 7500, "7000-7500",
+    wait_time >= 7500 AND wait_time < 8000, "7500-8000",
+    wait_time >= 8000 AND wait_time < 8500, "8000-8500",
+    wait_time >= 8500 AND wait_time < 9000, "8500-9000",
+    wait_time >= 9000 AND wait_time < 9500, "9000-9500",
+    wait_time >= 9500 AND wait_time <= 10000, "9500-10000"
+)
 | stats count by wait_time_range
 | sort wait_time_range
+
