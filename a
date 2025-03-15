@@ -1,0 +1,18 @@
+index=your_index source=your_source
+| spath
+| rex field=message "haproxy\[\d+\]:\s+(?<client_ip>\d+\.\d+\.\d+\.\d+):\d+\s+\[.*?\]\s+\S+\s+\S+\s+(?<timings>(?:\d+/){7}(?<wait_time>\d+))\s+(?<status>\d+)"
+| eval wait_time = tonumber(wait_time)
+| eval wait_time_range = case(
+    wait_time >= 0 AND wait_time < 100, "0-99",
+    wait_time >= 100 AND wait_time < 200, "100-199",
+    wait_time >= 200 AND wait_time < 300, "200-299",
+    wait_time >= 300 AND wait_time < 400, "300-399",
+    wait_time >= 400 AND wait_time < 500, "400-499",
+    wait_time >= 500 AND wait_time < 600, "500-599",
+    wait_time >= 600 AND wait_time < 700, "600-699",
+    wait_time >= 700 AND wait_time < 800, "700-799",
+    wait_time >= 800 AND wait_time < 900, "800-899",
+    wait_time >= 900 AND wait_time <= 1000, "900-1000",
+    1=1, "Unknown")
+| stats count by wait_time_range
+| sort wait_time_range
