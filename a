@@ -1,6 +1,6 @@
 index=your_index source=your_source
 | spath
-| rex field=message "haproxy\[\d+\]:\s+(?<client_ip>\d+\.\d+\.\d+\.\d+):\d+\s+\[.*?\]\s+\S+\s+\S+\s+(?<timings>(?:\d+/){7}(?<wait_time>\d+))\s+(?<status>\d+)"
+| rex field=message "\s(?<timings>(?:\d+/){7}(?<wait_time>\d+))\s+(?<status>\d+)\b"
 | eval wait_time = tonumber(wait_time)
 | eval wait_time_range = case(
     wait_time >= 0 AND wait_time < 100, "0-99",
